@@ -2,7 +2,7 @@
 (use jaylib)
 
 (def block-size 30)
-(def player-count 3)
+(def player-count 1)
 
 (def field-width 10)
 (def field-height 20)
@@ -10,7 +10,7 @@
 (def screen-width
   (let [pad (* (+ 1 player-count) block-size)]
     (+ (* field-width player-count block-size) pad)))
-(def screen-height 
+(def screen-height
   (let [pad (* block-size 2)]
     (+ (* field-height block-size) pad)))
 
@@ -21,12 +21,18 @@
 #
 # Field
 #
-
 (defn empty-field []
   (map (fn [_] (map (fn [_] 0) (range field-width))) (range field-height)))
 
+(defn make-field [player-number]
+  @{
+    :player-number player-number
+    :current-tetromino nil
+    :cells (empty-field)
+   })
+
 (defn make-state []
-  @{:fields (map (fn [_] (empty-field)) (range player-count))})
+  @{:fields (map (fn [x] (make-field x)) (range player-count))})
 
 (defn field-row-to-string [row]
   (string/join (map (fn [cell] (string cell)) row)
@@ -38,11 +44,22 @@
 (defn print-field [field]
   (map print-row field))
 
-(defn make-field [player-number]
+(defn make-tetromino [shape x y]
   @{
-    :player-number player-number
-    :data "poop"
+    :shape shape
+    :x x
+    :y y
+    :orientation 0
    })
+
+(defn set-player-key [player key value]
+  (set (((state :fields) player) key) value))
+
+(defn get-player-field [player]
+  ((state :fields) player) :cells)
+
+(defn spawn-tetromino [player]
+  (set-player-key player :current-tetromino (make-tetromino :J 0 0)))
 
 # Possible TODO - add hook for handling input _before_ update state
 (defn engine/loop [init-fn update-fn draw-fn width height window-title]
@@ -58,7 +75,13 @@
   (set state (make-state)))
 
 (defn update-state []
+  (spawn-tetromino 0)
+  # (printf "%j" (((state :fields) 0) :current-tetromino))
   )
+
+#
+# Field Drawing
+#
 
 (defn draw-field-border [field-number]
   (let [field-px-width (* field-width block-size)
@@ -78,7 +101,7 @@
 
 (defn draw-fields []
   (for i 0 player-count (draw-field i)))
-  
+
 (defn draw []
   (begin-drawing)
   (clear-background :black)
@@ -89,7 +112,10 @@
 # grip it and rip it #
 ######################
 
-(engine/loop my-init update-state draw screen-width screen-height "Jetris")
+(engine/loop my-init
+             update-state
+             draw
+             screen-width screen-height "Jetris")
 # (var field (empty-field))
 # (var test-row @[0 0 0 0 0 0 1 0 0 1])
 
