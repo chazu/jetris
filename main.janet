@@ -24,11 +24,17 @@
 (defn empty-field []
   (map (fn [_] (map (fn [_] 0) (range field-width))) (range field-height)))
 
+(defn random-0-or-1 []
+  (if (> (math/random) 0.5) 1 0))
+
+(defn random-field []
+  (map (fn [_] (map (fn [_] (random-0-or-1)) (range field-width))) (range field-height)))
+
 (defn make-field [player-number]
   @{
     :player-number player-number
     :current-tetromino nil
-    :cells (empty-field)
+    :cells (random-field)
    })
 
 (defn make-state []
@@ -77,27 +83,40 @@
 (defn update-state []
   (spawn-tetromino 0)
   # (printf "%j" (((state :fields) 0) :current-tetromino))
+  # (printf "%j" ((state :fields) 0))
   )
 
 #
 # Field Drawing
 #
 
-(defn draw-field-border [field-number]
+(defn draw-field-border [field-index]
   (let [field-px-width (* field-width block-size)
         field-px-height (* field-height block-size)
-        x-offset (+ (* field-number field-px-width) (* (+ field-number 1) block-size))
+        x-offset (+ (* field-index field-px-width) (* (+ field-index 1) block-size))
         y-offset block-size]
     (draw-rectangle-lines x-offset y-offset field-px-width field-px-height :white)))
 
-(defn draw-field-blocks[]
-)
+(defn draw-field-block [field-index row-index cell-index cell]
+  (if (= cell 1)
+    (let [field-px-width (* field-width block-size)
+          field-px-height (* field-height block-size)
+          field-x-offset (+ (* field-px-width field-index) block-size)
+          block-x-offset (* block-size cell-index)
+          field-y-offset block-size
+          x-offset (+ field-x-offset block-x-offset)
+          y-offset (+ field-y-offset (* block-size row-index))]
+      (draw-rectangle x-offset y-offset block-size block-size :blue))))
+
+(defn draw-field-blocks [field-index]
+  (let [cells (((state :fields) field-index) :cells)]
+    (eachp (row-index row) cells
+      (eachp (cell-index cell) row
+        (draw-field-block field-index row-index cell-index cell)))))
 
 (defn draw-field [field-index]
-  (let [field ((state :fields) field-index)]
-    (for i 0 player-count
-      (draw-field-border i)
-      (draw-field-blocks))))
+  (draw-field-blocks field-index)
+  (draw-field-border field-index))
 
 (defn draw-fields []
   (for i 0 player-count (draw-field i)))
