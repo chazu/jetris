@@ -9,6 +9,9 @@
 (def field-width 10)
 (def field-height 20)
 
+(var frame-counter -1)
+(var frames-per-tick 60)
+
 (def screen-width
   (let [pad (* (+ 1 player-count) block-size)]
     (+ (* field-width player-count block-size) pad)))
@@ -59,13 +62,22 @@
 (defn set-player-key [player key value]
   (set (((state :fields) player) key) value))
 
+(defn get-player-key [player key]
+  (((state :fields) player) key))
+
 (defn get-player-field [player]
   ((state :fields) player) :cells)
 
 (defn spawn-tetromino [player]
   (set-player-key player :current-tetromino (make-tetromino :J 0 0)))
 
+(defn advance-tetromino [player]
+  (let [new-y (+ 1 ((get-player-key player :current-tetromino) :y))]
+        (set ((((state :fields) player) :current-tetromino) :y) new-y)))
 
+(defn advance-tetrominos []
+  (for i 0 player-count (advance-tetromino i)))
+    
 (defn wrapped-inc [x limit]
   (% (+ 1 x) limit))
 
@@ -102,8 +114,16 @@
   (set state (make-state))
   (spawn-tetromino 0))
 
+(defn is-tick? []
+  (and
+    (not (= frame-counter 0)) 
+    (= (% frame-counter frames-per-tick) 0)))
+
 (defn update-state []
-  # (spawn-tetromino 0)
+  (++ frame-counter)
+  (if (is-tick?)
+    (advance-tetrominos))
+# (spawn-tetromino 0)
   # (printf "%j" (((state :fields) 0) :current-tetromino))
   # (printf "%j" ((state :fields) 0))
 )
@@ -141,10 +161,12 @@
 (defn draw-current-tetromino [field-index]
   (let [tetromino (((state :fields) field-index) :current-tetromino)
         shape (tetromino :shape)
-        orientation (tetromino :orientation)]
+        orientation (tetromino :orientation)
+        x (tetromino :x)
+        y (tetromino :y)]
     (eachp (row-index row) ((tetroids shape) orientation)
       (eachp (cell-index cell) row
-        (draw-field-block field-index row-index cell-index cell :red)))))
+        (draw-field-block field-index (+ row-index y) (+ cell-index x) cell :red)))))
 
 (defn draw-field [field-index]
   (draw-field-blocks field-index)
