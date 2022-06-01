@@ -15,6 +15,7 @@
 (def screen-width
   (let [pad (* (+ 1 player-count) block-size)]
     (+ (* field-width player-count block-size) pad)))
+
 (def screen-height
   (let [pad (* block-size 2)]
     (+ (* field-height block-size) pad)))
@@ -69,11 +70,11 @@
   ((state :fields) player) :cells)
 
 (defn spawn-tetromino [player]
-  (set-player-key player :current-tetromino (make-tetromino :J 0 0)))
+  (set-player-key player :current-tetromino (make-tetromino :bar 0 0)))
 
 (defn advance-tetromino [player]
   (let [new-y (+ 1 ((get-player-key player :current-tetromino) :y))]
-        (set ((((state :fields) player) :current-tetromino) :y) new-y)))
+    (set ((((state :fields) player) :current-tetromino) :y) new-y)))
 
 (defn advance-tetrominos []
   (for i 0 player-count (advance-tetromino i)))
@@ -86,8 +87,20 @@
 
 (defn clamp [number min max]
   (cond (> number max) max
-        (< number min) min
-        :else number))
+    (< number min) min
+    :else number))
+
+(defn detect-tetromino-collision [tetromino]
+  (var does-collide false)
+  (let [shape (tetroids (tetromino :shape))
+        x (tetromino :x)
+        y (tetromino :y)]
+    (eachp (row-index row) shape
+      (eachp (cell-index cell) row
+        (if (> cell 0)
+          (let [cell-x (+ cell-index x)]
+            (if (= cell-x field-width) (set does-collide true)))))))
+  does-collide)
 
 # TODO this is not taking the player number into account
 (defn rotate-tetromino [dir]
@@ -95,24 +108,27 @@
         shape (tetromino :shape)
         orientation (tetromino :orientation)
         new-orientation
-          (if (= dir :cw)
-            (wrapped-inc orientation (length (tetroids shape)))
-            (wrapped-dec orientation (length (tetroids shape))))]
+        (if (= dir :cw)
+          (wrapped-inc orientation (length (tetroids shape)))
+          (wrapped-dec orientation (length (tetroids shape))))]
     (set ((((state :fields) 0) :current-tetromino) :orientation) new-orientation)))
 
 (defn strafe-left []
   (let [tetromino (get-player-key 0 :current-tetromino)
         current-x (tetromino :x)
         next-x (- current-x 1)]
-    (print next-x)
-    (set (tetromino :x) (clamp next-x 0 field-width))))
+    (set (tetromino :x) (clamp next-x 0 field-width))
+    (if (detect-tetromino-collision tetromino)
+      (set (tetromino :x) current-x))))
 
 (defn strafe-right []
   (let [tetromino (get-player-key 0 :current-tetromino)
         current-x (tetromino :x)
         next-x (+ current-x 1)]
-    (print next-x)
-    (set (tetromino :x) (clamp next-x 0 field-width))))
+    (set (tetromino :x) (clamp next-x 0 field-width))
+    (if (detect-tetromino-collision tetromino)
+      (set (tetromino :x) current-x))))
+
 
 (defn handle-input []
   (if (key-pressed? :x) (rotate-tetromino :cw))
@@ -143,13 +159,7 @@
   (++ frame-counter)
   (handle-input)
   (if (is-tick?)
-    (advance-tetrominos))
-
-  # (spawn-tetromino 0)
-  # (printf "%j" (((state :fields) 0) :current-tetromino))
-  # (printf "%j" ((state :fields) 0))
-)
-
+    (advance-tetrominos)))
 
 #
 # Field Drawing
@@ -215,7 +225,3 @@
              update-state
              draw
              screen-width screen-height "Jetris")
-# (var field (empty-field))
-# (var test-row @[0 0 0 0 0 0 1 0 0 1])
-
-# (print-field field)
