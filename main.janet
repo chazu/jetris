@@ -77,7 +77,7 @@
 
 (defn advance-tetrominos []
   (for i 0 player-count (advance-tetromino i)))
-    
+
 (defn wrapped-inc [x limit]
   (% (+ 1 x) limit))
 
@@ -105,7 +105,6 @@
   (set-target-fps 60)
   (init-fn)
   (while (not (window-should-close))
-    (handle-input)
     (update-fn)
     (draw-fn))
   (close-window))
@@ -116,14 +115,16 @@
 
 (defn is-tick? []
   (and
-    (not (= frame-counter 0)) 
+    (not (= frame-counter 0))
     (= (% frame-counter frames-per-tick) 0)))
 
 (defn update-state []
   (++ frame-counter)
+  (handle-input)
   (if (is-tick?)
     (advance-tetrominos))
-# (spawn-tetromino 0)
+
+  # (spawn-tetromino 0)
   # (printf "%j" (((state :fields) 0) :current-tetromino))
   # (printf "%j" ((state :fields) 0))
 )
@@ -183,7 +184,6 @@
   (begin-drawing)
   (clear-background :black)
   (draw-fields)
-
   (end-drawing))
 
 ######################
@@ -198,4 +198,3 @@
 # (var test-row @[0 0 0 0 0 0 1 0 0 1])
 
 # (print-field field)
-
