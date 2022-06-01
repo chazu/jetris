@@ -84,6 +84,12 @@
 (defn wrapped-dec [x limit]
   (if (= x 0) (- limit 1) (- x 1)))
 
+(defn clamp [number min max]
+  (cond (> number max) max
+        (< number min) min
+        :else number))
+
+# TODO this is not taking the player number into account
 (defn rotate-tetromino [dir]
   (let [tetromino (((state :fields) 0) :current-tetromino)
         shape (tetromino :shape)
@@ -94,10 +100,25 @@
             (wrapped-dec orientation (length (tetroids shape))))]
     (set ((((state :fields) 0) :current-tetromino) :orientation) new-orientation)))
 
+(defn strafe-left []
+  (let [tetromino (get-player-key 0 :current-tetromino)
+        current-x (tetromino :x)
+        next-x (- current-x 1)]
+    (print next-x)
+    (set (tetromino :x) (clamp next-x 0 field-width))))
+
+(defn strafe-right []
+  (let [tetromino (get-player-key 0 :current-tetromino)
+        current-x (tetromino :x)
+        next-x (+ current-x 1)]
+    (print next-x)
+    (set (tetromino :x) (clamp next-x 0 field-width))))
+
 (defn handle-input []
   (if (key-pressed? :x) (rotate-tetromino :cw))
-  (if (key-pressed? :z) (rotate-tetromino :ccw)))
-
+  (if (key-pressed? :z) (rotate-tetromino :ccw))
+  (if (key-pressed? :right) (strafe-right))
+  (if (key-pressed? :left) (strafe-left)))
 
 # Possible TODO - add hook for handling input _before_ update state
 (defn engine/loop [init-fn update-fn draw-fn width height window-title]
