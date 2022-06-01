@@ -66,13 +66,21 @@
   (set-player-key player :current-tetromino (make-tetromino :J 0 0)))
 
 
+(defn wrapped-inc [x limit]
+  (% (+ 1 x) limit))
+
+(defn wrapped-dec [x limit]
+  (if (= x 0) (- limit 1) (- x 1)))
+
 (defn rotate-tetromino [dir]
   (let [tetromino (((state :fields) 0) :current-tetromino)
         shape (tetromino :shape)
         orientation (tetromino :orientation)
-        new-orientation (if (= dir :cw) (% (+ 1 orientation) (length (tetroids shape))) (do (print "go other way") 0))]
+        new-orientation
+          (if (= dir :cw)
+            (wrapped-inc orientation (length (tetroids shape)))
+            (wrapped-dec orientation (length (tetroids shape))))]
     (set ((((state :fields) 0) :current-tetromino) :orientation) new-orientation)))
-
 
 (defn handle-input []
   (if (key-pressed? :x) (rotate-tetromino :cw))
