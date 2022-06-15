@@ -10,7 +10,7 @@
 (def field-height 20)
 
 (var normal-frames-per-tick 60)
-(var fast-frames-per-tick 20)
+(var fast-frames-per-tick 5)
 
 (var frame-counter -1)
 (var frames-per-tick normal-frames-per-tick)
@@ -75,9 +75,39 @@
 (defn spawn-tetromino [player]
   (set-player-key player :current-tetromino (make-tetromino :bar 0 0)))
 
+(defn field-cell-at-x-y [x y]
+  (let [field-index 0
+        field-cells (((state :fields) field-index) :cells)]
+        ((field-cells y) x)))
+
+(defn detect-tetromino-collision [tetromino]
+  (var does-collide false)
+  (let [shape (tetroids (tetromino :shape))
+        orientation (tetromino :orientation)
+        rotated-shape (shape orientation)
+        x (tetromino :x)
+        y (tetromino :y)]
+    (eachp (row-index row) rotated-shape
+      (eachp (column-index cell) row
+        (if (= does-collide false)
+          (if (> cell 0)
+            (let [cell-x (+ column-index x)
+                  cell-y (+ row-index y)]
+              (if (or
+                (< cell-x 0) # check field left boundary
+                (>= cell-x field-width) # check field right boundary
+                (>= cell-y field-height) # check field bottom boundary
+                (> (field-cell-at-x-y cell-x cell-y) 0)) # check collision with field blocks
+                  (set does-collide true))))))))
+    does-collide)
+
 (defn advance-tetromino [player]
-  (let [new-y (+ 1 ((get-player-key player :current-tetromino) :y))]
-    (set ((((state :fields) player) :current-tetromino) :y) new-y)))
+  (let [tetromino (get-player-key player :current-tetromino)
+        original-y ((get-player-key player :current-tetromino) :y)
+        new-y (+ 1 ((get-player-key player :current-tetromino) :y))]
+    (set ((((state :fields) player) :current-tetromino) :y) new-y)
+    (if (detect-tetromino-collision tetromino)
+      (set ((((state :fields) player) :current-tetromino) :y) original-y))))
 
 (defn advance-tetrominos []
   (for i 0 player-count (advance-tetromino i)))
@@ -92,18 +122,6 @@
   (cond (> number max) max
     (< number min) min
     :else number))
-
-(defn detect-tetromino-collision [tetromino]
-  (var does-collide false)
-  (let [shape (tetroids (tetromino :shape))
-        x (tetromino :x)
-        y (tetromino :y)]
-    (eachp (row-index row) shape
-      (eachp (cell-index cell) row
-        (if (> cell 0)
-          (let [cell-x (+ cell-index x)]
-            (if (= cell-x field-width) (set does-collide true)))))))
-  does-collide)
 
 # TODO this is not taking the player number into account
 (defn rotate-tetromino [dir]
@@ -120,7 +138,7 @@
   (let [tetromino (get-player-key 0 :current-tetromino)
         current-x (tetromino :x)
         next-x (- current-x 1)]
-    (set (tetromino :x) (clamp next-x 0 field-width))
+    (set (tetromino :x) next-x)
     (if (detect-tetromino-collision tetromino)
       (set (tetromino :x) current-x))))
 
@@ -128,7 +146,7 @@
   (let [tetromino (get-player-key 0 :current-tetromino)
         current-x (tetromino :x)
         next-x (+ current-x 1)]
-    (set (tetromino :x) (clamp next-x 0 field-width))
+    (set (tetromino :x) next-x)
     (if (detect-tetromino-collision tetromino)
       (set (tetromino :x) current-x))))
 
