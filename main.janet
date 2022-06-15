@@ -9,8 +9,11 @@
 (def field-width 10)
 (def field-height 20)
 
+(var normal-frames-per-tick 60)
+(var fast-frames-per-tick 20)
+
 (var frame-counter -1)
-(var frames-per-tick 60)
+(var frames-per-tick normal-frames-per-tick)
 
 (def screen-width
   (let [pad (* (+ 1 player-count) block-size)]
@@ -39,7 +42,7 @@
 (defn make-field [player-number]
   @{:player-number player-number
     :current-tetromino nil
-    :cells (random-field)})
+    :cells (empty-field)})
 
 (defn make-state []
   @{:fields (map (fn [x] (make-field x)) (range player-count))})
@@ -134,7 +137,10 @@
   (if (key-pressed? :x) (rotate-tetromino :cw))
   (if (key-pressed? :z) (rotate-tetromino :ccw))
   (if (key-pressed? :right) (strafe-right))
-  (if (key-pressed? :left) (strafe-left)))
+  (if (key-pressed? :left) (strafe-left))
+  (if (key-down? :down)
+    (set frames-per-tick fast-frames-per-tick)
+    (set frames-per-tick normal-frames-per-tick)))
 
 # Possible TODO - add hook for handling input _before_ update state
 (defn engine/loop [init-fn update-fn draw-fn width height window-title]
@@ -182,7 +188,6 @@
           x-offset (+ field-x-offset block-x-offset)
           y-offset (+ field-y-offset (* block-size row-index))]
       (draw-rectangle x-offset y-offset block-size block-size color))))
-
 
 (defn draw-field-blocks [field-index]
   (let [cells (((state :fields) field-index) :cells)]
