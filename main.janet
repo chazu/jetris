@@ -78,7 +78,7 @@
 (defn field-cell-at-x-y [x y]
   (let [field-index 0
         field-cells (((state :fields) field-index) :cells)]
-        ((field-cells y) x)))
+    ((field-cells y) x)))
 
 (defn detect-tetromino-collision [tetromino]
   (var does-collide false)
@@ -94,12 +94,12 @@
             (let [cell-x (+ column-index x)
                   cell-y (+ row-index y)]
               (if (or
-                (< cell-x 0) # check field left boundary
-                (>= cell-x field-width) # check field right boundary
-                (>= cell-y field-height) # check field bottom boundary
-                (> (field-cell-at-x-y cell-x cell-y) 0)) # check collision with field blocks
-                  (set does-collide true))))))))
-    does-collide)
+                    (< cell-x 0) # check field left boundary
+                    (>= cell-x field-width) # check field right boundary
+                    (>= cell-y field-height) # check field bottom boundary
+                    (> (field-cell-at-x-y cell-x cell-y) 0)) # check collision with field blocks
+                (set does-collide true))))))))
+  does-collide)
 
 (defn advance-tetromino [player]
   (let [tetromino (get-player-key player :current-tetromino)
@@ -123,16 +123,21 @@
     (< number min) min
     :else number))
 
+(defn set-current-tetromino-orientation [player orientation]
+  (set ((((state :fields) player) :current-tetromino) :orientation) orientation))
+
 # TODO this is not taking the player number into account
-(defn rotate-tetromino [dir]
-  (let [tetromino (((state :fields) 0) :current-tetromino)
-        shape (tetromino :shape)
-        orientation (tetromino :orientation)
+(defn rotate-tetromino [player dir]
+  (let [current-tetromino (((state :fields) player) :current-tetromino)
+        shape (current-tetromino :shape)
+        orientation (current-tetromino :orientation)
         new-orientation
         (if (= dir :cw)
           (wrapped-inc orientation (length (tetroids shape)))
           (wrapped-dec orientation (length (tetroids shape))))]
-    (set ((((state :fields) 0) :current-tetromino) :orientation) new-orientation)))
+    (set-current-tetromino-orientation player new-orientation)
+    (if (detect-tetromino-collision current-tetromino)
+      (set-current-tetromino-orientation player orientation))))
 
 (defn strafe-left []
   (let [tetromino (get-player-key 0 :current-tetromino)
@@ -152,8 +157,8 @@
 
 
 (defn handle-input []
-  (if (key-pressed? :x) (rotate-tetromino :cw))
-  (if (key-pressed? :z) (rotate-tetromino :ccw))
+  (if (key-pressed? :x) (rotate-tetromino 0 :cw))
+  (if (key-pressed? :z) (rotate-tetromino 0 :ccw))
   (if (key-pressed? :right) (strafe-right))
   (if (key-pressed? :left) (strafe-left))
   (if (key-down? :down)
