@@ -120,7 +120,7 @@
                   (if (> cell 0)
                     (let [cell-x (+ column-index x)
                           cell-y (+ row-index y)]
-                      (set (((((state :fields) player) :cells) cell-y) cell-x) 1)
+                      (set (((((state :fields) player) :cells) cell-y) cell-x) cell)
                       (spawn-tetromino 0)))))))
 
 (defn advance-tetromino [player]
@@ -225,7 +225,7 @@
     (draw-rectangle-lines x-offset y-offset field-px-width field-px-height :white)))
 
 (defn draw-field-block [field-index row-index cell-index cell color]
-  (if (= cell 1)
+  (if (> cell 0)
     (let [field-px-width (* field-width block-size)
           field-px-height (* field-height block-size)
           field-x-offset (+ (* field-px-width field-index) block-size)
@@ -235,11 +235,14 @@
           y-offset (+ field-y-offset (* block-size row-index))]
       (draw-rectangle x-offset y-offset block-size block-size color))))
 
+(defn color-for-index [index]
+  ([:black :blue :red :green :yellow :orange :purple :white] index))
+
 (defn draw-field-blocks [field-index]
   (let [cells (((state :fields) field-index) :cells)]
     (eachp (row-index row) cells
       (eachp (cell-index cell) row
-        (draw-field-block field-index row-index cell-index cell :blue)))))
+        (draw-field-block field-index row-index cell-index cell (color-for-index cell))))))
 
 (defn draw-current-tetromino [field-index]
   (let [tetromino (((state :fields) field-index) :current-tetromino)
@@ -249,7 +252,7 @@
         y (tetromino :y)]
     (eachp (row-index row) ((tetroids shape) orientation)
       (eachp (cell-index cell) row
-        (draw-field-block field-index (+ row-index y) (+ cell-index x) cell :red)))))
+        (draw-field-block field-index (+ row-index y) (+ cell-index x) cell (color-for-index cell))))))
 
 (defn draw-field [field-index]
   (draw-current-tetromino field-index)
