@@ -72,8 +72,15 @@
 (defn get-player-field [player]
   ((state :fields) player) :cells)
 
+(defn array-rand-element [arr]
+  (let [rand-index (math/floor (* (math/random) (length arr)))]
+    (arr rand-index)))
+
+(defn random-shape-name []
+  (array-rand-element [:z :s :square :bar :L :J :T]))
+
 (defn spawn-tetromino [player]
-  (set-player-key player :current-tetromino (make-tetromino :bar 0 0)))
+  (set-player-key player :current-tetromino (make-tetromino (random-shape-name) 0 0)))
 
 (defn field-cell-at-x-y [x y]
   (let [field-index 0
