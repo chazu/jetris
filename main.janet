@@ -81,6 +81,7 @@
     ((field-cells y) x)))
 
 (defn detect-tetromino-collision [tetromino]
+
   (var does-collide false)
   (let [shape (tetroids (tetromino :shape))
         orientation (tetromino :orientation)
@@ -101,13 +102,28 @@
                 (set does-collide true))))))))
   does-collide)
 
+(defn bake-tetromino [player tetromino]
+  (let [shape (tetroids (tetromino :shape))
+        orientation (tetromino :orientation)
+        rotated-shape (shape orientation)
+        x (tetromino :x)
+        y (tetromino :y)]
+    (eachp (row-index row) rotated-shape
+           (eachp (column-index cell) row
+                  (if (> cell 0)
+                    (let [cell-x (+ column-index x)
+                          cell-y (+ row-index y)]
+                      (set (((((state :fields) player) :cells) cell-y) cell-x) 1)
+                      (spawn-tetromino 0)))))))
+
 (defn advance-tetromino [player]
   (let [tetromino (get-player-key player :current-tetromino)
         original-y ((get-player-key player :current-tetromino) :y)
         new-y (+ 1 ((get-player-key player :current-tetromino) :y))]
     (set ((((state :fields) player) :current-tetromino) :y) new-y)
     (if (detect-tetromino-collision tetromino)
-      (set ((((state :fields) player) :current-tetromino) :y) original-y))))
+      (do (set ((((state :fields) player) :current-tetromino) :y) original-y)
+          (bake-tetromino player tetromino)))))
 
 (defn advance-tetrominos []
   (for i 0 player-count (advance-tetromino i)))
@@ -229,12 +245,9 @@
         (draw-field-block field-index (+ row-index y) (+ cell-index x) cell :red)))))
 
 (defn draw-field [field-index]
-  (draw-field-blocks field-index)
   (draw-current-tetromino field-index)
+  (draw-field-blocks field-index)
   (draw-field-border field-index))
-
-(defn draw-fields []
-  (for i 0 player-count (draw-field i)))
 
 (defn draw-fields []
   (for i 0 player-count (draw-field i)))
